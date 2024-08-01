@@ -17,7 +17,7 @@
 
 #!nounbound
 (library (climate)
-    (export climate group
+    (export climate group options
 	    climate? climate-commands climate-command
 	    execute-climate
 	    command-group? command-group-commands
@@ -25,7 +25,8 @@
 	    result? result-success? result-value)
     (import (rnrs)
 	    (climate dsl)
-	    (climate types))
+	    (climate types)
+	    (sagittarius))
 
 (define (execute-climate climate args)
   (cond ((null? args) (climate-usage climate "No command is given" #f))
@@ -39,7 +40,8 @@
     (display message out)
     (when irr (display " " out) (display irr out))
     (newline out)
-    ;; name command [sub-command ...] [options ...]
+    ;; $ name command [sub-command ...] [options ...]
+    (display "$ " out)
     (display (climate-name climate) out)
     (display " command [sub-command ...] [options ...]" out)
     (newline out)
@@ -55,9 +57,11 @@
 (define (execute-command exec-tree command args)
   (cond ((command-executor? command)
 	 ;; TODO args to options
-	 (guard (e (else (make-error-result (condition-message e))))
+	 (guard (e (else (command-usage-result command exec-tree
+					       (condition-message e)
+					       args)))
 	   (make-success-result
-	    (apply (command-executor-process command) args))))
+	    (invoke-command-executor command args))))
 	((command-group? command)
 	 (cond ((null? args)
 		(command-usage-result command exec-tree
@@ -75,11 +79,43 @@
     (display msg out)
     (when irr (display " " out) (display irr out))
     (newline out)
-    ;; name command [sub-command ...] [options ...]
-    (for-each (lambda (name) (display name out) (display " " out))
-	      (reverse tree))
-    (display (command-name command) out)
-    (newline out)
+
+    (let ((arguments (cond ((command-usage command) =>
+			    (lambda (usage)
+			      (display "Usage: " out)
+			      (cond ((string? usage)
+				     (display usage out)
+				     (newline out)
+				     #f)
+				    ((list? usage)
+				     (when (car usage)
+				       (display (car usage) out)
+				       (newline out))
+				     (cdr usage))
+				    (else #f))))
+			   (else #f))))
+      (display "$ " out)
+      ;; name command [sub-command ...] [options ...]
+      (for-each (lambda (name) (display name out) (display " " out))
+		(reverse tree))
+      (display (command-name command) out)
+      (when arguments
+	(display " " out)
+	(for-each (lambda (u)
+		    (option-usage-command-line-format u out))
+		  arguments))
+      (newline out)
+      (when arguments
+	(display "OPTIONS:" out) (newline out)
+	(for-each (lambda (u)
+		    (display "  " out)
+		    (cond ((option-usage? u)
+			   (option-usage-format u out))
+			  ((not u))
+			  (else (display u out)))
+		    (newline out))
+		  arguments)))
+    
     (cond ((command-group? command) (command-group-usage command out))
 	  ((command-executor? command) (command-executor-usage command out)))
     (make-error-result (e))))

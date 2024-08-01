@@ -34,8 +34,15 @@
 	    command? command-name command-usage
 	    command-group? make-command-group command-group-commands
 	    command-group-command
-	    command-executor? make-command-executor command-executor-process
+	    command-executor? make-command-executor
+	    command-executor-process
+	    command-executor-options
+	    invoke-command-executor
 
+	    option-usage? make-option-usage
+	    option-usage-names option-usage-message
+	    option-usage-format option-usage-command-line-format
+	    
 	    result? make-success-result make-error-result
 	    result-success? result-value)
     (import (rnrs))
@@ -62,7 +69,48 @@
 
 (define-record-type command-executor
   (parent command)
-  (fields process))
+  (fields process
+	  options
+	  options-mapper))
+
+(define (invoke-command-executor command args)
+  (let ((args (cond ((command-executor-options-mapper command) =>
+		     (lambda (parser) (parser command args)))
+		    (else args))))
+    (apply (command-executor-process command) args)))
+
+
+;; for help
+(define-record-type option-usage
+  (fields names message need-argument? default))
+(define (option-usage-format usage out)
+  (let ((opt (option-usage-option-format usage #t))
+	(message (option-usage-message usage))
+	(default (option-usage-default usage)))
+    (display opt out) (display ": " out)
+    (display message out)
+    (when default
+      (display ", default value is " out)
+      (display default out))))
+
+(define (option-usage-command-line-format usage out)
+  (let ((opt (option-usage-option-format usage #f))
+	(need-argument? (option-usage-need-argument? usage)))
+    (display "[" out)
+    (display opt out)
+    (when need-argument?
+      (display " $" out)
+      (display (cadr (option-usage-names usage)) out))
+    (display "]" out)))
+
+(define (option-usage-option-format usage long?)
+  (let-values (((out e) (open-string-output-port)))
+    (let ((names (option-usage-names usage))
+	  (message (option-usage-message usage)))
+      (display "-" out) (display (car names) out)
+      (when long?
+	(display "," out) (display "--" out) (display (cadr names) out))
+      (e))))
 
 ;; result
 (define-record-type result
