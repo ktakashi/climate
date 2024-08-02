@@ -106,6 +106,7 @@
       (extract-required-names required)
       (list opts ...)
       (lambda (command args)
+	(define arg-names (extract-required-names required))
 	(let-values (((a ... argv)
 		      (args-fold args
 				 (command-executor-options command)
@@ -116,15 +117,15 @@
 				 (lambda (operand a ... argv)
 				   (values a ... (cons operand argv)))
 				 d ... '())))
-	  (unless (or (not 'required) (= (length argv) (length 'required)))
+	  (unless (or (not arg-names) (= (length argv) (length arg-names)))
 	    (assertion-violation 'command-executor-option-parser
-	      (format "Wrong number of arguments, required ~s" 'required)))
+	      (format "Wrong number of arguments, required ~s" arg-names)))
 	  (append (reverse! argv) a ...)))))))
 
 (define-syntax required-usage
   (syntax-rules ()
-    ((_ name) (make-required-usage #f 'name))
-    ((_ (name usage)) (make-required-usage usage 'name))))
+    ((_ (name usage)) (make-required-usage usage 'name))
+    ((_ name) (make-required-usage #f 'name))))
 
 (define-syntax extract-required-names
   (syntax-rules ()
