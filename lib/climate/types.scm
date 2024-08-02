@@ -86,6 +86,7 @@
 	      (reverse parents))
     (display (command-name command) out)
     (newline out)
+    (newline out)
     (display "SUB COMMANDS:" out) (newline out)
     (for-each (lambda (command)
 		(display "  - " out)

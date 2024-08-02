@@ -37,19 +37,29 @@
 
 (define (climate-usage climate message irr)
   (let-values (((out e) (open-string-output-port)))
-    (display message out)
+    (display "Error: " out) (display message out)
     (when irr (display " " out) (display irr out))
+    (newline out)
+    (newline out)
+    (display "Usage:" out)
     (newline out)
     ;; $ name command [sub-command ...] [options ...]
     (display "$ " out)
     (display (climate-name climate) out)
     (display " command [sub-command ...] [options ...]" out)
     (newline out)
+    (newline out)
     ;; list of available commands
-    (display "  Available commands:" out) (newline out)
+    (display "COMMANDS:" out) (newline out)
     (for-each (lambda (command)
 		(display "  - " out)
 		(display (command-name command) out)
+		(cond ((command-usage command) =>
+		       (lambda (usage)
+			 (cond ((string? usage)
+				(display ": " out) (display usage out))
+			       ((and (pair? usage) (car usage))
+				(display ": " out) (display (car usage) out))))))
 		(newline out))
 	      (climate-commands climate))
     (make-error-result (e))))
@@ -76,8 +86,9 @@
 
 (define (command-usage-result command tree msg irr)
   (let-values (((out e) (open-string-output-port)))
-    (display msg out)
+    (display "Error: " out) (display msg out)
     (when irr (display " " out) (display irr out))
+    (newline out)
     (newline out)
 
     (let ((usage (cond ((command-group? command)
