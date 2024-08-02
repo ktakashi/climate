@@ -48,7 +48,8 @@
 	    
 	    result? make-success-result make-error-result
 	    result-success? result-value)
-    (import (rnrs))
+    (import (rnrs)
+	    (sagittarius))
 
 (define-record-type climate
   (fields name commands))
@@ -166,7 +167,7 @@
 	       (default (option-usage-default usage)))
 	   (display opt out) (display ": " out)
 	   (when message (display message out))
-	   (when default
+	   (when (and default (not (undefined? default)))
 	     (when message (display ", " out))
 	     (display "default value is " out)
 	     (display default out))))
