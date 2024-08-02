@@ -33,15 +33,18 @@
 	    climate-command
 	    command? command-name command-usage
 	    command-group? make-command-group command-group-commands
-	    command-group-command
+	    command-group-command command-group-usage
 	    command-executor? make-command-executor
+	    command-executor-usage
 	    command-executor-process
 	    command-executor-options
 	    invoke-command-executor
 
+	    usage? usage-message
+	    format-usage format-command-line-usage
+	    required-usage? make-required-usage required-usage-name
 	    option-usage? make-option-usage
-	    option-usage-names option-usage-message
-	    option-usage-format option-usage-command-line-format
+	    option-usage-names 
 	    
 	    result? make-success-result make-error-result
 	    result-success? result-value)
@@ -67,11 +70,76 @@
 (define (command-group-command (command command-group?) name)
   (search-command name (command-group-commands command)))
 
+(define (command-group-usage command parents)
+  (let-values (((out e) (open-string-output-port)))
+    (cond ((command-usage command) =>
+	   (lambda (usage)
+	     (display "Description: " out)
+	     (display usage out)
+	     (newline out))))
+    (display "Usage:" out)
+    (newline out)
+    (display "$ " out)
+    ;; name command [sub-command ...] [options ...]
+    (for-each (lambda (name) (display name out) (display " " out))
+	      (reverse parents))
+    (display (command-name command) out)
+    (newline out)
+    (display "SUB COMMANDS:" out) (newline out)
+    (for-each (lambda (command)
+		(display "  - " out)
+		(display (command-name command) out)
+		(cond ((command-usage command) =>
+		       (lambda (usage)
+			 (cond ((string? usage)
+				(display ": " out) (display usage out))
+			       ((and (pair? usage) (car usage))
+				(display ": " out) (display (car usage) out))))))
+		(newline out))
+	      (command-group-commands command))
+    (e)))
+
 (define-record-type command-executor
   (parent command)
   (fields process
+	  arguments
 	  options
 	  options-mapper))
+
+(define (command-executor-usage command parents)
+  (let-values (((out e) (open-string-output-port)))
+    (let ((arguments (cond ((command-usage command) =>
+			    (lambda (usage)
+			      (when (car usage)
+				(display "Description: " out)
+				(display (car usage) out)
+				(newline out))
+			      (cdr usage))))))
+      (display "Usage:" out)
+      (newline out)
+      (display "$ " out)
+      ;; name command [sub-command ...] [options ...]
+      (for-each (lambda (name) (display name out) (display " " out))
+		(reverse parents))
+      (display (command-name command) out)
+      (display " " out)
+      (for-each (lambda (u) (format-command-line-usage u out)) arguments)
+      (newline out)
+      (let ((required (filter required-usage? arguments))
+	    (options (filter option-usage? arguments)))
+	(unless (null? options)
+	  (newline out)
+	  (display "ARGUMENTS:" out) (newline out)
+	  (for-each (lambda (u)
+		      (display "  " out) (format-usage u out) (newline out))
+		    required))
+	(unless (null? options)
+	  (newline out)
+	  (display "OPTIONS:" out) (newline out)
+	  (for-each (lambda (u)
+		      (display "  " out) (format-usage u out) (newline out))
+		    options))))
+    (e)))
 
 (define (invoke-command-executor command args)
   (let ((args (cond ((command-executor-options-mapper command) =>
@@ -79,34 +147,51 @@
 		    (else args))))
     (apply (command-executor-process command) args)))
 
-
 ;; for help
-(define-record-type option-usage
-  (fields names message need-argument? default))
-(define (option-usage-format usage out)
-  (let ((opt (option-usage-option-format usage #t))
-	(message (option-usage-message usage))
-	(default (option-usage-default usage)))
-    (display opt out) (display ": " out)
-    (display message out)
-    (when default
-      (display ", default value is " out)
-      (display default out))))
+(define-record-type usage
+  (fields message))
 
-(define (option-usage-command-line-format usage out)
-  (let ((opt (option-usage-option-format usage #f))
-	(need-argument? (option-usage-need-argument? usage)))
-    (display "[" out)
-    (display opt out)
-    (when need-argument?
-      (display " $" out)
-      (display (cadr (option-usage-names usage)) out))
-    (display "]" out)))
+(define-record-type required-usage
+  (parent usage)
+  (fields name))
+
+(define-record-type option-usage
+  (parent usage)
+  (fields names need-argument? default))
+(define (format-usage usage out)
+  (define message (usage-message usage))
+  (cond ((option-usage? usage)
+	 (let ((opt (option-usage-option-format usage #t))
+	       (default (option-usage-default usage)))
+	   (display opt out) (display ": " out)
+	   (when message (display message out))
+	   (when default
+	     (when message (display ", " out))
+	     (display "default value is " out)
+	     (display default out))))
+	(else
+	 (let ((name (required-usage-name usage)))
+	   (display (or name "arg") out) (display ": " out)
+	   (when message (display message out))))))
+
+(define (format-command-line-usage usage out)
+  (cond ((option-usage? usage)
+	 (let ((opt (option-usage-option-format usage #f))
+	       (need-argument? (option-usage-need-argument? usage)))
+	   (display "[" out)
+	   (display opt out)
+	   (when need-argument?
+	     (display " $" out)
+	     (display (cadr (option-usage-names usage)) out))
+	   (display "]" out)))
+	(else
+	 (display "$" out)
+	 (display (or (required-usage-name usage) "arg") out))))
 
 (define (option-usage-option-format usage long?)
   (let-values (((out e) (open-string-output-port)))
     (let ((names (option-usage-names usage))
-	  (message (option-usage-message usage)))
+	  (message (usage-message usage)))
       (display "-" out) (display (car names) out)
       (when long?
 	(display "," out) (display "--" out) (display (cadr names) out))

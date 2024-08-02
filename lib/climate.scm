@@ -17,7 +17,7 @@
 
 #!nounbound
 (library (climate)
-    (export climate group options
+    (export climate group arguments options
 	    climate? climate-commands climate-command
 	    execute-climate
 	    command-group? command-group-commands
@@ -80,54 +80,11 @@
     (when irr (display " " out) (display irr out))
     (newline out)
 
-    (let ((arguments (cond ((command-usage command) =>
-			    (lambda (usage)
-			      (display "Usage: " out)
-			      (cond ((string? usage)
-				     (display usage out)
-				     (newline out)
-				     #f)
-				    ((list? usage)
-				     (when (car usage)
-				       (display (car usage) out)
-				       (newline out))
-				     (cdr usage))
-				    (else #f))))
-			   (else #f))))
-      (display "$ " out)
-      ;; name command [sub-command ...] [options ...]
-      (for-each (lambda (name) (display name out) (display " " out))
-		(reverse tree))
-      (display (command-name command) out)
-      (when arguments
-	(display " " out)
-	(for-each (lambda (u)
-		    (option-usage-command-line-format u out))
-		  arguments))
-      (newline out)
-      (when arguments
-	(display "OPTIONS:" out) (newline out)
-	(for-each (lambda (u)
-		    (display "  " out)
-		    (cond ((option-usage? u)
-			   (option-usage-format u out))
-			  ((not u))
-			  (else (display u out)))
-		    (newline out))
-		  arguments)))
-    
-    (cond ((command-group? command) (command-group-usage command out))
-	  ((command-executor? command) (command-executor-usage command out)))
-    (make-error-result (e))))
+    (let ((usage (cond ((command-group? command)
+			(command-group-usage command tree))
+		       (else
+			(command-executor-usage command tree)))))
+      (display usage out)
+      (make-error-result (e)))))
 
-(define (command-group-usage command out)
-  (display "  Available sub commands:" out) (newline out)
-  (for-each (lambda (command)
-	      (display "  - " out)
-	      (display (command-name command) out)
-	      (newline out))
-	    (command-group-commands command)))
-
-(define (command-executor-usage command out)
-  )
 )
