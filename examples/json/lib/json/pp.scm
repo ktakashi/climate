@@ -67,6 +67,7 @@
 	  ((eq? x 'null) (display "null" out))
 	  ((symbol? x) (write (symbol->string x) out))
 	  ((or (string? x) (number? x)) (write x out))
+	  ((boolean? x) (display (if x "true" "false") out))
 	  (else (error 'json-pp "Invalid JSON object" x))))
 
   (write-any json out 0))
