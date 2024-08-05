@@ -17,7 +17,9 @@ exec scheme-env run sagittarius@0.9.11 -l $dir/lib -- "$0" "$@"
     (group (jws "JWS command")
 	   (jwe "JWE command")
 	   (jwk "JWK command")))
-   (format "Format JSON command" json-pp)))
+   (format "Format JSON command" json-pp
+	   (arguments
+	    ((input "JSON input to be formatted. Can be stdin, file or JSON string"))))))
 
 (define (main args)
   (let ((result (execute-climate json-cli (cdr args))))

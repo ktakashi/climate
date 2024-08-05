@@ -130,7 +130,7 @@
       (newline out)
       (let ((required (filter required-usage? arguments))
 	    (options (filter option-usage? arguments)))
-	(unless (null? options)
+	(unless (null? required)
 	  (newline out)
 	  (display "ARGUMENTS:" out) (newline out)
 	  (for-each (lambda (u)
