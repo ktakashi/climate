@@ -22,10 +22,14 @@
 	    execute-climate
 	    command-group? command-group-commands
 	    command-executor? command-executor-process
-	    result? result-success? result-value)
+	    result? result-success? result-value
+
+	    argument->input-port
+	    )
     (import (rnrs)
 	    (climate dsl)
 	    (climate types)
+	    (climate input)
 	    (sagittarius))
 
 (define (execute-climate climate args)

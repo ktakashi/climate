@@ -54,7 +54,7 @@
      (command name #f process (options opts ...)))
     ;; executor
     ((_ name usage process)
-     (make-command-executor 'name 'usage process #f '() #f))
+     (make-command-executor 'name '(usage) process #f '() #f))
     ((_ name process)
      (command name #f process))
 ))
