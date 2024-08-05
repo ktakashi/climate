@@ -46,6 +46,7 @@
 	      (else (error 'json-pp "Invalid JSON object key" k)))
 	(display ": " out)
 	(write-any v out n))
+      (unless (= i (- len 1)) (display "," out))
       (newline out))
     (write-indent indent out) (display "}" out))
   (define (write-array x out indent)
