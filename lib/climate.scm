@@ -24,7 +24,9 @@
 	    command-executor? command-executor-process
 	    result? result-success? result-value
 
-	    argument->input-port
+	    ;; command line input utilities
+	    argument->input-port call-with-argument-input-port
+	    parse-attributed-argument
 	    )
     (import (rnrs)
 	    (climate dsl)
@@ -69,10 +71,21 @@
     (make-error-result (e))))
 
 (define (execute-command exec-tree command args)
+  (define (format-message c)
+    (let-values (((o e) (open-string-output-port)))
+      (put-string o (condition-message c))
+      (put-string o ": ")
+      (cond ((and (irritants-condition? c) (condition-irritants c)) =>
+	     (lambda (irr)
+	       (for-each (lambda (i) (display i o) (display " ")) irr)))
+	    ((and (i/o-filename-error? c) (i/o-error-filename c)) =>
+	     (lambda (file) (put-string o file))))
+      (e)))
+		      
   (cond ((command-executor? command)
 	 ;; TODO args to options
 	 (guard (e (else (command-usage-result command exec-tree
-					       (condition-message e)
+					       (format-message e)
 					       args)))
 	   (make-success-result
 	    (invoke-command-executor command args))))

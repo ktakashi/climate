@@ -18,7 +18,9 @@
 ;; command line input utilities
 #!nounbound
 (library (climate input)
-    (export argument->input-port)
+    (export argument->input-port
+	    call-with-argument-input-port
+	    parse-attributed-argument)
     (import (rnrs)
 	    (srfi :13 strings))
 
@@ -34,5 +36,17 @@
 	   (open-bytevector-input-port
 	    (call-with-input-file file get-bytevector-all :transcoder #f))))
 	(else (open-bytevector-input-port (string->utf8 in)))))
+
+(define (call-with-argument-input-port arg proc :key (transcoder #f))
+  (let ((in (argument->input-port arg)))
+    (proc (if transcoder (transcoded-port in transcoder) in))))
+
+(define (parse-attributed-argument arg :optional (default #f))
+  (cond ((string-index arg #\|) =>
+	 (lambda (index)
+	   (let ((val (substring arg 0 index))
+		 (att (substring arg (+ index 1) (string-length arg))))
+	     (values val att))))
+	(else (values arg default))))
 
 )
