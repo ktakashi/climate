@@ -19,9 +19,11 @@
 #!nounbound
 (library (climate input)
     (export argument->input-port
+	    argument->string-content
 	    call-with-argument-input-port
 	    parse-attributed-argument)
     (import (rnrs)
+	    (util port)
 	    (srfi :13 strings))
 
 ;; argument
@@ -36,6 +38,17 @@
 	   (open-bytevector-input-port
 	    (call-with-input-file file get-bytevector-all :transcoder #f))))
 	(else (open-bytevector-input-port (string->utf8 in)))))
+
+(define (argument->string-content arg)
+  (define (get-all in)
+    (let-values (((out e) (open-bytevector-output-port)))
+      (port-for-each (lambda (b) (put-u8 out b)) (lambda () (get-u8 in)))
+      (e)))
+      
+  (let ((v (get-all (argument->input-port arg))))
+    (if (eof-object? v)
+	""
+	(utf8->string v))))
 
 (define (call-with-argument-input-port arg proc :key (transcoder #f))
   (let ((in (argument->input-port arg)))

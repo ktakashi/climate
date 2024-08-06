@@ -25,7 +25,8 @@
 	    result? result-success? result-value
 
 	    ;; command line input utilities
-	    argument->input-port call-with-argument-input-port
+	    argument->input-port argument->string-content
+	    call-with-argument-input-port
 	    parse-attributed-argument
 	    )
     (import (rnrs)
