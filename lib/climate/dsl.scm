@@ -85,7 +85,7 @@
 	(next ...))
      (command-options "ret" info t usage (args ...) (opts ...)
       (p ... arg)
-      (v ... (list key t))
+      (v ... (list key (or t #t))) ;; option without argument sends #f...
       (d ... (list key default))
       (next ... (names argument?))))
     ((_ "ret" info t usage () () (p ...) (v ...) (d ...) (next ...))
