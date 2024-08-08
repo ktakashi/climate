@@ -79,28 +79,29 @@
 		      (opt ... (key names arg? default))
 		      (options ...)))
     ((_ "walk" info (usage ...) (arg ...) (opt ...) ())
-     (command-options "ret" info t (usage ...) (arg ...) (opt ...) () () () ()))
-    ((_ "ret" info t usage (arg args ...)
+     (command-options "ret" info (usage ...) (arg ...) (opt ...) () () () ()))
+
+    ((_ "ret" info usage (arg args ...)
 	((key names argument? default) opts ...) (p ...) (v ...) (d ...)
 	(next ...))
-     (command-options "ret" info t usage (args ...) (opts ...)
+     (command-options "ret" info usage (args ...) (opts ...)
       (p ... arg)
-      (v ... (list key (or t #t))) ;; option without argument sends #f...
+      ;; option without argument sends #f...
+      (v ... (t (p ... (list key (or t #t)) args ...)))
       (d ... (list key default))
       (next ... (names argument?))))
-    ((_ "ret" info t usage () () (p ...) (v ...) (d ...) (next ...))
-     (command-options "opt" info t usage (p ...) (v ...) (d ...)
+    ((_ "ret" info usage () () (p ...) (v ...) (d ...) (next ...))
+     (command-options "opt" info usage (p ...) (v ...) (d ...)
 		      (next ...) ()))
 
-    ((_ "opt" info t usage (a ...) (v ...) (d ...)
+    ((_ "opt" info usage (a ...) ((t (ret ...)) v* ...) (d ...)
 	((names argument?) next ...)
 	(opts ...))
-     (command-options "opt" info t usage (a ...) (v ...) (d ...) (next ...)
+     (command-options "opt" info usage (a ...) (v* ...) (d ...) (next ...)
 	(opts ... (option 'names argument? #f
 			  (lambda (option name t a ... argv)
-			    (values v ... argv))))))
-    ((_ "opt" (name process required) t (u ...) (a ...) (v ...) (d ...)
-	() (opts ...))
+			    (values ret ... argv))))))
+    ((_ "opt" (name process required) (u ...) (a ...) () (d ...) () (opts ...))
      (make-command-executor
       'name (list u ...) process
       (extract-required-names required)

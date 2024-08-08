@@ -17,12 +17,33 @@
 
 #!nounbound
 (library (json jwt jws)
-    (export jws-verify)
+    (export jws-show jws-verify)
     (import (rnrs)
 	    (rfc jws)
 	    (rfc jwk)
 	    (json jwt util)
-	    (climate input))
+	    (json pp)
+	    (rfc base64)
+	    (text json)
+	    (climate input)
+	    (srfi :13 strings))
+
+(define (jws-show jws :key pretty no-header json)
+  (define jws-string (argument->string-content jws))
+  (define json-display (if pretty json-pretty-print json-write/normalized))
+  (let ((jws-object (jws:parse (string-trim-right jws-string))))
+    (let-values (((out e) (open-string-output-port)))
+      (unless no-header
+	(json-display (jws-header->json (jws-object-header jws-object)) out)
+	(newline out))
+      (let ((in (open-bytevector-input-port (jws-object-payload jws-object))))
+	(if json
+	    (let ((tin (transcoded-port in (native-transcoder))))
+	      (json-display (json-read tin) out))
+	    (call-with-port (open-base64-encode-input-port in)
+	      (lambda (in)
+		(put-string out (utf8->string (get-bytevector-all in)))))))
+      (e))))
 
 (define (jws-verify jws :key (public-key #f) (jwks #f))
   (define jws-string

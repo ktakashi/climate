@@ -17,7 +17,8 @@
 
 #!nounbound
 (library (json pp)
-    (export json-pp)
+    (export json-pp
+	    json-pretty-print)
     (import (rnrs)
 	    (text json)
 	    (climate))
