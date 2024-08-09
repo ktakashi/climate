@@ -61,7 +61,7 @@
 
 (define-syntax command-options
   (syntax-rules ()
-    ((_ name usage process (required ...) (option ...))
+     ((_ name usage process (required ...) (option ...))
      (command-options "walk"
 		      (name process (required ...))
 		      (usage (required-usage required) ...)
