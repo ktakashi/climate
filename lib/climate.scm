@@ -19,6 +19,7 @@
 (library (climate)
     (export climate group arguments options
 	    climate? climate-commands climate-command
+	    describe-climate-usage
 	    execute-climate
 	    command-group? command-group-commands
 	    command-executor? command-executor-process
@@ -36,40 +37,44 @@
 	    (sagittarius))
 
 (define (execute-climate climate args)
-  (cond ((null? args) (climate-usage climate "No command is given" #f))
+  (cond ((null? args) (climate-usage-result climate "No command is given" #f))
 	((climate-command climate (string->symbol (car args))) =>
 	 (lambda (command)
 	   (execute-command (list (climate-name climate)) command (cdr args))))
-	(else (climate-usage climate "Command not found" (car args)))))
+	(else (climate-usage-result climate "Command not found" (car args)))))
 
-(define (climate-usage climate message irr)
+(define (climate-usage-result climate message irr)
   (let-values (((out e) (open-string-output-port)))
     (display "Error: " out) (display message out)
     (when irr (display " " out) (display irr out))
     (newline out)
     (newline out)
-    (display "Usage:" out)
-    (newline out)
-    ;; $ name command [sub-command ...] [options ...]
-    (display "$ " out)
-    (display (climate-name climate) out)
-    (display " command [sub-command ...] [options ...]" out)
-    (newline out)
-    (newline out)
-    ;; list of available commands
-    (display "COMMANDS:" out) (newline out)
-    (for-each (lambda (command)
-		(display "  - " out)
-		(display (command-name command) out)
-		(cond ((command-usage command) =>
-		       (lambda (usage)
-			 (cond ((string? usage)
-				(display ": " out) (display usage out))
-			       ((and (pair? usage) (car usage))
-				(display ": " out) (display (car usage) out))))))
-		(newline out))
-	      (climate-commands climate))
+    (describe-climate-usage climate out)
     (make-error-result (e))))
+
+(define (describe-climate-usage climate out)
+  (display "Usage:" out)
+  (newline out)
+  ;; $ name command [sub-command ...] [options ...]
+  (display "$ " out)
+  (display (climate-name climate) out)
+  (display " command [sub-command ...] [options ...]" out)
+  (newline out)
+  (newline out)
+  ;; list of available commands
+  (display "COMMANDS:" out) (newline out)
+  (for-each (lambda (command)
+	      (display "  - " out)
+	      (display (command-name command) out)
+	      (cond ((command-usage command) =>
+		     (lambda (usage)
+		       (cond ((string? usage)
+			      (display ": " out) (display usage out))
+			     ((and (pair? usage) (car usage))
+			      (display ": " out) (display (car usage) out))))))
+	      (newline out))
+	    (climate-commands climate)))
+  
 
 (define (execute-command exec-tree command args)
   (define (format-message c)
@@ -89,7 +94,7 @@
 					       (format-message e)
 					       args)))
 	   (make-success-result
-	    (invoke-command-executor command args))))
+	    (invoke-command-executor command exec-tree args))))
 	((command-group? command)
 	 (cond ((null? args)
 		(command-usage-result command exec-tree

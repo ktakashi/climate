@@ -144,11 +144,12 @@
 		    options))))
     (e)))
 
-(define (invoke-command-executor command args)
+(define (invoke-command-executor command parents args)
+  (define process (command-executor-process command))
   (let ((args (cond ((command-executor-options-mapper command) =>
 		     (lambda (parser) (parser command args)))
 		    (else args))))
-    (apply (command-executor-process command) args)))
+    (apply process args)))
 
 ;; for help
 (define-record-type usage
