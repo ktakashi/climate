@@ -19,7 +19,8 @@
 
 #!nounbound
 (library (climate dsl)
-    (export climate group arguments options)
+    (export climate group arguments options prefab
+	    (rename (command climate:command)))
     (import (rnrs)
 	    (sagittarius)
 	    (climate types)
@@ -34,9 +35,12 @@
 (define-syntax group (syntax-rules ()))
 (define-syntax arguments (syntax-rules ()))
 (define-syntax options (syntax-rules ()))
+(define-syntax prefab (syntax-rules ()))
 
 (define-syntax command
-  (syntax-rules (group options arguments)
+  (syntax-rules (group options arguments prefab)
+    ((_ (prefab command)) command)
+    ((_ prefab command) command)
     ;; command group 
     ((_ name usage (group (clause ...) ...))
      (make-command-group 'name 'usage (list (command clause ...) ...)))

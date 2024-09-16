@@ -11,21 +11,7 @@ exec scheme-env run sagittarius@0.9.11 -l $dir/lib -- "$0" "$@"
 
 (define json-cli
   (climate json-cli
-   (jwt "JWT command"
-    (group (jws "JWS command" 
-	    (group (verify "Verify JWS signature" jws-verify
-		    (arguments 
-		     ((jws "JWS string"))
-		     (:public-key (#\p "public-key") #t #f "Public key to verify. Can be PEM or JWK format")
-		     (:jwks (#\u "jwks-uri") #t #f "JWKS location")))
-		   (show "Decode and print JWS" jws-show
-		    (arguments
-		     ((jws "JWS string"))
-		     (:pretty (#\p "pretty") #f #f "Pretty print")
-		     (:no-header (#\H "no-header") #f #f "Only payload")
-		     (:json (#\j "json") #f #f "Decode payload as JSON")))))
-	   (jwe "JWE command")
-	   (jwk "JWK command")))
+   (prefab jwt-command)
    (format "Format JSON command" json-pp
     (arguments
      ((input "JSON input to be formatted. Can be stdin, file or JSON string"))))))

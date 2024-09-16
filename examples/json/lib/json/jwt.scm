@@ -17,6 +17,34 @@
 
 #!nounbound
 (library (json jwt)
-    (export :all)
-    (import (json jwt jws)))
+    (export jwt-command)
+    (import (rnrs)
+	    (climate)
+	    (json jwt jws))
+
+(define jws-verify-command
+  (climate:command verify "Verify JWS signature" jws-verify
+   (arguments 
+    ((jws "JWS string"))
+    (:public-key (#\p "public-key") #t #f "Public key to verify. Can be PEM or JWK format")
+    (:jwks (#\u "jwks-uri") #t #f "JWKS location"))))
+
+(define jws-command
+  (climate:command jws "JWS command" 
+   (group
+    (prefab jws-verify-command)
+    (show "Decode and print JWS" jws-show
+	  (arguments
+	   ((jws "JWS string"))
+	   (:pretty (#\p "pretty") #f #f "Pretty print")
+	   (:no-header (#\H "no-header") #f #f "Only payload")
+	   (:json (#\j "json") #f #f "Decode payload as JSON"))))))
+
+(define jwt-command
+  (climate:command jwt "JWT command"
+   (group
+    (prefab jws-command)
+    (jwe "JWE command")
+    (jwk "JWK command"))))
+)
 	    

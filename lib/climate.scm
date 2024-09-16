@@ -17,7 +17,7 @@
 
 #!nounbound
 (library (climate)
-    (export climate group arguments options
+    (export climate group arguments options prefab climate:command
 	    climate? climate-commands climate-command
 	    describe-climate-usage
 	    execute-climate
