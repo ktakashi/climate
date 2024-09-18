@@ -20,6 +20,7 @@
 (library (climate input)
     (export argument->input-port
 	    argument->string-content
+	    argument->bytevector-content
 	    call-with-argument-input-port
 	    parse-attributed-argument)
     (import (rnrs)
@@ -30,25 +31,35 @@
 ;; "-"     -> stdin (make sure only once, the procedure won't check)
 ;; "@file" -> file content -> bytevector -> input port
 ;; "aaa"   -> string->utf8 -> bytevector port
+(define (file-suffix? s) (string-prefix? "@" s))
+(define (stdin-mark? s) (string=? s "-"))
+
+(define (get-all in)
+  (let-values (((out e) (open-bytevector-output-port)))
+    (port-for-each (lambda (b) (put-u8 out b)) (lambda () (get-u8 in)))
+    (e)))
+
 (define (argument->input-port in)
   ;; from stdin
-  (cond ((string=? in "-") (standard-input-port))
-	((string-prefix? "@" in)
+  (cond ((stdin-mark? in) (standard-input-port))
+	((file-suffix? in)
 	 (let ((file (substring in 1 (string-length in))))
 	   (open-bytevector-input-port
 	    (call-with-input-file file get-bytevector-all :transcoder #f))))
 	(else (open-bytevector-input-port (string->utf8 in)))))
 
 (define (argument->string-content arg)
-  (define (get-all in)
-    (let-values (((out e) (open-bytevector-output-port)))
-      (port-for-each (lambda (b) (put-u8 out b)) (lambda () (get-u8 in)))
-      (e)))
-      
-  (let ((v (get-all (argument->input-port arg))))
-    (if (eof-object? v)
-	""
-	(utf8->string v))))
+  (if (or (stdin-mark? arg) (file-suffix? arg))
+      (utf8->string (argument->bytevector-content arg))
+      arg))
+
+(define (argument->bytevector-content arg)
+  (if (or (stdin-mark? arg) (file-suffix? arg))
+      (let ((v (get-all (argument->input-port arg))))
+	(if (eof-object? v)
+	    #vu8()
+	    v))
+      (string->utf8 arg)))
 
 (define (call-with-argument-input-port arg proc :key (transcoder #f))
   (let ((in (argument->input-port arg)))

@@ -26,7 +26,9 @@
 	    result? result-success? result-value
 
 	    ;; command line input utilities
-	    argument->input-port argument->string-content
+	    argument->input-port
+	    argument->string-content
+	    argument->bytevector-content
 	    call-with-argument-input-port
 	    parse-attributed-argument
 	    )
