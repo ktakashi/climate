@@ -34,11 +34,6 @@
 (define (file-suffix? s) (string-prefix? "@" s))
 (define (stdin-mark? s) (string=? s "-"))
 
-(define (get-all in)
-  (let-values (((out e) (open-bytevector-output-port)))
-    (port-for-each (lambda (b) (put-u8 out b)) (lambda () (get-u8 in)))
-    (e)))
-
 (define (argument->input-port in)
   ;; from stdin
   (cond ((stdin-mark? in) (standard-input-port))
@@ -54,6 +49,10 @@
       arg))
 
 (define (argument->bytevector-content arg)
+  (define (get-all in)
+    (let-values (((out e) (open-bytevector-output-port)))
+      (port-for-each (lambda (b) (put-u8 out b)) (lambda () (get-u8 in)))
+      (e)))
   (if (or (stdin-mark? arg) (file-suffix? arg))
       (let ((v (get-all (argument->input-port arg))))
 	(if (eof-object? v)
